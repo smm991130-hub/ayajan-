@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sinf Sinov Testi</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #0f0c1b, #201335, #3b1647);
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .quiz-container {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            border-radius: 20px;
+            width: 100%;
+            max-width: 550px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+            text-align: center;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            margin-bottom: 25px;
+            overflow: hidden;
+        }
+
+        .progress {
+            width: 5%;
+            height: 100%;
+            background: linear-gradient(90deg, #ff007f, #7f00ff);
+            transition: width 0.3s ease;
+        }
+
+        .question-number {
+            font-size: 14px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #ff007f;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+
+        .question-text {
+            font-size: 22px;
+            font-weight: 600;
+            margin-bottom: 25px;
+            line-height: 1.4;
+        }
+
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+
+        .option-btn {
+            background: rgba(255, 255, 255, 0.08);
+            border: 2px solid transparent;
+            padding: 15px 20px;
+            border-radius: 12px;
+            color: #fff;
+            font-size: 16px;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s ease;
+        }
+
+        .option-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: #7f00ff;
+        }
+
+        .option-btn.selected {
+            background: linear-gradient(90deg, rgba(255, 0, 127, 0.2), rgba(127, 0, 255, 0.2));
+            border-color: #ff007f;
+            box-shadow: 0 0 15px rgba(255, 0, 127, 0.3);
+        }
+
+        .next-btn {
+            background: linear-gradient(90deg, #7f00ff, #ff007f);
+            color: white;
+            border: none;
+            padding: 15px 35px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(255, 0, 127, 0.4);
+            transition: transform 0.2s, box-shadow 0.2s;
+            width: 100%;
+        }
+
+        .next-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(255, 0, 127, 0.6);
+        }
+
+        .next-btn:disabled {
+            background: #555;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        .result-screen {
+            display: none;
+        }
+
+        .result-title {
+            font-size: 26px;
+            color: #00ffcc;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="quiz-container">
+    <div id="quiz-block">
+        <div class="progress-bar">
+            <div class="progress" id="progress"></div>
+        </div>
+        <div class="question-number" id="q-num">Savol: 1/20</div>
+        <div class="question-text" id="q-text">Yuklanmoqda...</div>
+        
+        <div class="options-container" id="options"></div>
+
+        <button class="next-btn" id="next-btn" onclick="nextQuestion()">Keyingisi (Next)</button>
+    </div>
+
+    <div id="result-block" class="result-screen">
+        <h2 class="result-title">✨ Rahmat! ✨</h2>
+        <p id="result-status" style="font-size: 18px; line-height: 1.6; color: #e0e0e0;">
+            Natijalar yuborilmoqda... iltimos kuting.
+        </p>
+    </div>
+</div>
+
+<script>
+    const TELEGRAM_BOT_TOKEN = "8750537134:AAFbCGHttv9ZtR3XHmsKjsXmB4l1sUSxb-Q";
+    const TELEGRAM_CHAT_ID = "7050310480";
+
+    const questions = [
+        { q: "Sokinasanmi (yomon so'zlar ishlatasanmi)?", a: ["Yo'q, umuman so'kinmayman", "Jahlim chiqqanda tasodifan aytib yuborishim mumkin", "Ha, ba'zida do'stlar davrasida"] },
+        { q: "Shu vaqtgacha nechta yigit bilan gaplashgansan?", a: ["Hech kim bilan gaplashmaganman", "1-2 ta jiddiy gaplashganim bo'lgan", "Faqat do'stona gaplashganman, munosabat bo'lmagan"] },
+        { q: "Nechta tilni bilasan?", a: ["Faqat o'zbek tilini", "2 ta tilni (Rus tili yoki Ingliz tili bilan)", "3 ta va undan ko'p tillarni"] },
+        { q: "Maktabda / o'qishda yaxshi o'qiysanmi?", a: ["Ha, a'lochi / namunali qizman", "O'rtacha, yomon emas", "O'qishga unchalik qiziqmayman"] },
+        { q: "Instagramga o'z rasmlaringni ochiqchasiga qo'yasanmi?", a: ["Yo'q, umuman rasm qo'ymayman / profilim yopiq", "Faqat yuzim ko'rinmagan yoki effektli rasmlar qo'yaman", "Ha, chiroyli rasmlarimni muntazam qo'yib boraman"] },
+        { q: "Nimaga qiziqasan (Xobbi, sevimli mashg'uloting)?", a: ["Kitob o'qish, ilm olish yoki til o'rganishga", "Pazandachilik, tikuvchilik, san'atga", "Internet, kino ko'rish va sayohatlarga"] },
+        { q: "Sening orzuingdagi yigit qanaqa bo'lishi kerak?", a: ["Iymonli, aqlli va oilasini hurmat qiladigan", "Kelajagi bor, maqsadli va pul topa oladigan", "Chiroyli, zamonaviy va meni tushunadigan"] },
+        { q: "Agar men senga uylansam, oyimga o'z qizidek qiz bo'la olasanmi?", a: ["Ha, albatta, onangizni o'z onamdek ko'raman", "Harakat qilaman, lekin alohida yashashni afzal ko'raman", "Vaqt ko'rsatadi, darrov moslashish qiyin"] },
+        { q: "Kelajakda qaysi davlatga chiqmoqchisan / sayohat qilmoqchisan?", a: ["Saudiya Arabistoni (Umra / Haj)", "Evropa davlatlari yoki AQSh", "Turkiya, Dubay yoki Osiyo davlatlari"] },
+        { q: "Oilangda ilgarilari qamalib chiqqan odam bormi?", a: ["Yo'q, oilamiz tinch va toza", "Uzoq qarindoshlarda bo'lgan bo'lishi mumkin", "Bunday ma'lumotni ochiq ayta olmayman"] },
+        { q: "Kalta kiyimlar kiyasanmi yoki uzun va yopiq kiyimlarni afzal ko'rasanmi?", a: ["Faqat uzun, keng va yopiq kiyaman", "Kalta emas, lekin zamonaviy/ochiqroq kiyina olaman", "Uydagilar ruxsat berganicha kiyinaman"] },
+        { q: "Kelajakda ishlashni xohlaysanmi yoki uy bekasi bo'lishnimi?", a: ["Faqat uy bekasi bo'lib, farzand tarbiyasi bilan band bo'laman", "O'z kasbim bo'yicha ishlashni va rivojlanishni xohlayman", "Erim ruxsat bersa ishlayman, bo'lmasa yo'q"] },
+        { q: "Puli ko'p lekin vaqti yo'q yigitmi yoki puli o'rtacha lekin doim yoningda bo'ladiganmi?", a: ["Puli o'rtacha bo'lsa ham e'tiborli va yonimda bo'ladigani", "Puli ko'p va ta'minlab qo'yadigani, vaqti kam bo'lsa ham mayli", "Ikkalasini ham muvozanati bo'lgani yaxshi"] },
+        { q: "Jahling chiqsa o'zingni qanday tutasan?", a: ["Jim bo'lib qolaman va ichimda yutaman", "Darrov asabiylashib, gap qaytarishim mumkin", "Vaziyatga qarab tinchlanishga harakat qilaman"] },
+        { q: "Ovqat qilishni va uy ishlarini yaxshi ko'rasanmi?", a: ["Ha, juda yaxshi ko'raman va uddalayman", "Majburlikdan qilaman, unchalik yoqtirmayman", "Hali hammasini mukammal bilmayman, o'rganyapman"] },
+        { q: "Siyosat va iqtisodga qiziqasanmi yoki shunchaki blogerlarni kuzatasanmi?", a: ["Jiddiy mavzularga, ilm-fanga qiziqaman", "Faqat trendlar, blogerlar va qiziqarli videolarni ko'raman", "Ikkalasiga ham vaqt ajrataman"] },
+        { q: "Sen uchun oilada kim boshliq bo'lishi kerak?", a: ["Albatta erkak kishi - u oila ustuni", "Ikkala tomon teng huquqli bo'lishi kerak", "Aqlliroq va tajribalirog'i rahbar bo'ladi"] },
+        { q: "Erkak kishining qaysi xislatini umuman kechirmaysan?", a: ["Yolg'onchilik va xiyonatni", "Xasislik (ziqnalik) va mas'uliyatsizlikni", "Qo'pol muomala va hurmatsizlikni"] },
+        { q: "Kitob o'qishga va o'z ustingda ishlashga vaqt ajratasanmi?", a: ["Ha, muntazam kitob o'qiyman", "Vaqtim bo'lganda juda kam hollarda", "Kitob o'qishga uncha toqatim yo'q"] },
+        { q: "Men haqimda dastlabki tasavvuring yoki fikring qanday?", a: ["Jiddiy, maqsadi aniq yigitga o'xshaysiz", "Yaxshi insonsiz, lekin yaxshiroq tanishish kerak", "Sizni tushunish biroz qiyinroq ekan"] }
+    ];
+
+    let currentQuestionIndex = 0;
+    let selectedOptionIndex = null;
+    let userAnswers = [];
+
+    function loadQuestion() {
+        selectedOptionIndex = null;
+        const currentQuestion = questions[currentQuestionIndex];
+        
+        const progressPercent = ((currentQuestionIndex + 1) / questions.length) * 100;
+        document.getElementById('progress').style.width = `${progressPercent}%`;
+        
+        document.getElementById('q-num').innerText = `Savol: ${currentQuestionIndex + 1}/${questions.length}`;
+        document.getElementById('q-text').innerText = currentQuestion.q;
+        
+        const optionsContainer = document.getElementById('options');
+        optionsContainer.innerHTML = '';
+        
+        currentQuestion.a.forEach((option, index) => {
+            const button = document.createElement('button');
+            button.className = 'option-btn';
+            button.innerText = option;
+            button.onclick = () => selectOption(index);
+            optionsContainer.appendChild(button);
+        });
+
+        if (currentQuestionIndex === questions.length - 1) {
+            document.getElementById('next-btn').innerText = "Tugatish (Finish)";
+        } else {
+            document.getElementById('next-btn').innerText = "Keyingisi (Next)";
+        }
+    }
+
+    function selectOption(index) {
+        selectedOptionIndex = index;
+        const buttons = document.querySelectorAll('.option-btn');
+        buttons.forEach((btn, idx) => {
+            if (idx === index) {
+                btn.classList.add('selected');
+            } else {
+                btn.classList.remove('selected');
+            }
+        });
+    }
+
+    function nextQuestion() {
+        if (selectedOptionIndex === null) {
+            alert("Iltimos, davom etishdan oldin variantlardan birini tanlang! 😉");
+            return;
+        }
+
+        // Javobni massivga saqlash
+        userAnswers.push({
+            question: questions[currentQuestionIndex].q,
+            answer: questions[currentQuestionIndex].a[selectedOptionIndex]
+        });
+
+        if (currentQuestionIndex < questions.length - 1) {
+            currentQuestionIndex++;
+            loadQuestion();
+        } else {
+            // Test tugadi, bloklarni almashtirish va natijani yuborish
+            document.getElementById('quiz-block').style.display = 'none';
+            document.getElementById('result-block').style.display = 'block';
+            sendResultsToTelegram();
+        }
+    }
+
+    function sendResultsToTelegram() {
+        let message = "🔔 <b>Yangi test natijalari keldi!</b>\n\n";
+        
+        userAnswers.forEach((item, index) => {
+            message += `<b>${index + 1}. ${item.question}</b>\n`;
+            message += `👉 <i>Javob: ${item.answer}</i>\n\n`;
+        });
+
+        const url = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`;
+
+        fetch(url, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                chat_id: TELEGRAM_CHAT_ID,
+                text: message,
+                parse_mode: 'HTML'
+            })
+        })
+        .then(response => {
+            if(response.ok) {
+                document.getElementById('result-status').innerHTML = "Barcha savollarga samimiy javob berganing uchun rahmat. Javoblaring muvaffaqiyatli saqlandi! 😉";
+            } else {
+                document.getElementById('result-status').innerHTML = "Xatolik yuz berdi, lekin javoblar saqlanishga harakat qilindi.";
+            }
+        })
+        .catch(error => {
+            console.error('Xatolik:', error);
+            document.getElementById('result-status').innerHTML = "Aloqa xatosi. Birozdan so'ng qayta urinib ko'ring.";
+        });
+    }
+
+    loadQuestion();
+</script>
+
+</body>
+</html>
